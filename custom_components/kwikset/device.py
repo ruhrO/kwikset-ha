@@ -68,6 +68,7 @@ _KEY_LED = "ledstatus"
 _KEY_AUDIO = "audiostatus"
 _KEY_SECURE_SCREEN = "securescreenstatus"
 _KEY_AUTOLOCK = "autolockstate"
+_KEY_LAST_CHECKIN = "lastupdatestatus"
 
 # API response keys for access code fields
 _KEY_ACCESS_CODE_CRC = "accesscodecrc"
@@ -563,6 +564,27 @@ class KwiksetDeviceDataUpdateCoordinator(DataUpdateCoordinator[KwiksetDeviceData
         if self.data:
             return self.data.get("battery_percentage")
         return self._device_info.get(_KEY_BATTERY)
+
+    @property
+    def last_checkin(self) -> datetime | None:
+        """Return when the lock last reported to the Kwikset cloud.
+
+        ``lastupdatestatus`` is an epoch timestamp the cloud advances each time
+        the lock checks in, whether or not its state changed. A lock that is
+        offline (dead batteries, no Wi-Fi) stops advancing it while its last
+        door status stays as it was, so this is the signal that tells a stale
+        "Locked" apart from a current one.
+        """
+        raw = self._device_info.get(_KEY_LAST_CHECKIN)
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            return None
+        if value <= 0:
+            return None
+        if value > 10_000_000_000:  # milliseconds, not seconds
+            value //= 1000
+        return datetime.fromtimestamp(value, tz=UTC)
 
     @property
     def firmware_version(self) -> str:

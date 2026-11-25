@@ -2418,3 +2418,57 @@ class TestPreserveDoorStatus:
 
         # Flag should still be cleared even though no data was preserved
         assert coordinator._preserve_door_status is False
+
+
+# =============================================================================
+# Last check-in (lastupdatestatus) Tests
+# =============================================================================
+
+
+class TestLastCheckin:
+    """Tests for the last_checkin property."""
+
+    @staticmethod
+    async def _coordinator(
+        hass: HomeAssistant, mock_config_entry: MagicMock, info: dict
+    ) -> KwiksetDeviceDataUpdateCoordinator:
+        api = MagicMock()
+        api.device = MagicMock()
+        api.device.get_device_info = AsyncMock(return_value=info)
+        coordinator = KwiksetDeviceDataUpdateCoordinator(
+            hass=hass,
+            api_client=api,
+            device_id=MOCK_DEVICE_ID,
+            device_name=MOCK_DEVICE_NAME,
+            update_interval=30,
+            config_entry=mock_config_entry,
+        )
+        await coordinator.async_config_entry_first_refresh()
+        return coordinator
+
+    @pytest.mark.parametrize(
+        "raw",
+        [1795639164, "1795639164", 1795639164000],
+        ids=["int-seconds", "str-seconds", "milliseconds"],
+    )
+    async def test_parses_epoch(
+        self, hass: HomeAssistant, mock_config_entry: MagicMock, raw
+    ) -> None:
+        """Test lastupdatestatus is parsed to an aware UTC datetime."""
+        from datetime import UTC
+        from datetime import datetime
+
+        info = {**MOCK_DEVICE_INFO, "lastupdatestatus": raw}
+        coordinator = await self._coordinator(hass, mock_config_entry, info)
+
+        assert coordinator.last_checkin == datetime.fromtimestamp(1795639164, tz=UTC)
+
+    @pytest.mark.parametrize("raw", [None, "", "abc", 0, -5])
+    async def test_missing_or_invalid_is_none(
+        self, hass: HomeAssistant, mock_config_entry: MagicMock, raw
+    ) -> None:
+        """Test a missing, zero or unparsable value gives None."""
+        info = {**MOCK_DEVICE_INFO, "lastupdatestatus": raw}
+        coordinator = await self._coordinator(hass, mock_config_entry, info)
+
+        assert coordinator.last_checkin is None
