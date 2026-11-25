@@ -548,6 +548,11 @@ class KwiksetDeviceDataUpdateCoordinator(DataUpdateCoordinator[KwiksetDeviceData
         return self._device_name
 
     @property
+    def raw_device_info(self) -> dict[str, Any]:
+        """Return a copy of the last raw get_device_info payload (diagnostics)."""
+        return dict(self._device_info)
+
+    @property
     def manufacturer(self) -> str:
         """Return manufacturer (always Kwikset)."""
         return "Kwikset"

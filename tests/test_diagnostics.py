@@ -187,3 +187,33 @@ class TestDiagnostics:
 
         entry_data = result["entry"]["data"]
         assert entry_data.get("stored_password") == "**REDACTED**"
+
+    async def test_diagnostics_includes_redacted_raw_device_info(
+        self,
+        hass: HomeAssistant,
+        mock_coordinator: MagicMock,
+    ) -> None:
+        """Test the raw device payload is included, with identifiers redacted."""
+        mock_coordinator.raw_device_info = {
+            "deviceid": "dev_001",
+            "serialnumber": "SN12345678",
+            "homeid": "home_001",
+            "ssidwifi": "MyNetwork",
+            "doorstatus": "Locked",
+            "connectivitystatus": "Connected",
+        }
+        entry = MagicMock()
+        entry.title = "Test Home"
+        entry.version = 5
+        entry.data = {}
+        entry.options = {}
+        entry.runtime_data = MagicMock()
+        entry.runtime_data.devices = {MOCK_DEVICE_ID: mock_coordinator}
+
+        result = await async_get_config_entry_diagnostics(hass, entry)
+
+        raw = result["devices"][0]["raw_device_info"]
+        assert raw["doorstatus"] == "Locked"
+        assert raw["connectivitystatus"] == "Connected"
+        for key in ("deviceid", "serialnumber", "homeid", "ssidwifi"):
+            assert raw[key] == "**REDACTED**"

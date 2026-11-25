@@ -34,6 +34,13 @@ TO_REDACT = {
     "email",
     "firstname",
     "lastname",
+    "homeid",
+    "ssidwifi",
+    "macaddress",
+    "accesscodesixtyfour",
+    "accesscodeeight",
+    "accesscodebyindex",
+    "accesscodecrc",
 }
 
 
@@ -56,6 +63,10 @@ async def async_get_config_entry_diagnostics(
             "audio_status": coordinator.audio_status,
             "secure_screen_status": coordinator.secure_screen_status,
             "last_update_success": coordinator.last_update_success,
+            # The raw get_device_info payload, so fields the integration does
+            # not parse yet (connectivity, door position, lock op state, ...)
+            # can be seen when diagnosing a report. Redacted like the rest.
+            "raw_device_info": coordinator.raw_device_info,
         }
         devices_data.append(device_info)
 
