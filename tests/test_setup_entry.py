@@ -1707,3 +1707,43 @@ class TestWebSocketSubscription:
         # triggered by the door status change (Locked → Unlocked).
         async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=15))
         await hass.async_block_till_done()
+
+
+# =============================================================================
+# Device registry lookup (async_get_device deprecation)
+# =============================================================================
+
+
+class TestFindDevice:
+    """Tests for _async_find_device."""
+
+    def test_uses_per_entry_lookup_when_available(self) -> None:
+        """Test the non-deprecated per-entry lookup is preferred."""
+        from unittest.mock import MagicMock
+
+        from custom_components.kwikset import _async_find_device
+        from custom_components.kwikset.const import DOMAIN
+
+        registry = MagicMock()
+        registry.async_get_device_by_identifier.return_value = "device"
+
+        assert _async_find_device(registry, "dev1", "entry1") == "device"
+        registry.async_get_device_by_identifier.assert_called_once_with(
+            (DOMAIN, "dev1"), "entry1"
+        )
+        registry.async_get_device.assert_not_called()
+
+    def test_falls_back_on_older_home_assistant(self) -> None:
+        """Test HA without the per-entry lookup uses async_get_device."""
+        from unittest.mock import MagicMock
+
+        from custom_components.kwikset import _async_find_device
+        from custom_components.kwikset.const import DOMAIN
+
+        registry = MagicMock(spec=["async_get_device"])
+        registry.async_get_device.return_value = "device"
+
+        assert _async_find_device(registry, "dev1", "entry1") == "device"
+        registry.async_get_device.assert_called_once_with(
+            identifiers={(DOMAIN, "dev1")}
+        )

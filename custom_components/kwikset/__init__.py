@@ -614,6 +614,22 @@ async def _async_add_new_devices(
     )
 
 
+@callback
+def _async_find_device(
+    device_registry: dr.DeviceRegistry, device_id: str, entry_id: str
+) -> dr.DeviceEntry | None:
+    """Find this entry's device for a Kwikset device ID.
+
+    ``DeviceRegistry.async_get_device`` is deprecated (identifiers are no
+    longer unique across config entries) and stops working in HA 2027.8.
+    Use the per-entry lookup where HA has it, and fall back on older HA.
+    """
+    lookup = getattr(device_registry, "async_get_device_by_identifier", None)
+    if lookup is not None:
+        return lookup((DOMAIN, device_id), entry_id)
+    return device_registry.async_get_device(identifiers={(DOMAIN, device_id)})
+
+
 async def _async_remove_stale_devices(
     hass: HomeAssistant,
     entry: KwiksetConfigEntry,
@@ -632,7 +648,7 @@ async def _async_remove_stale_devices(
 
     for device_id in removed_device_ids:
         # Remove from device registry (cascades to entity removal)
-        device = device_registry.async_get_device(identifiers={(DOMAIN, device_id)})
+        device = _async_find_device(device_registry, device_id, entry.entry_id)
         if device:
             device_registry.async_update_device(
                 device_id=device.id,
