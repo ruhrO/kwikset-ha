@@ -537,6 +537,9 @@
             "battery": {
                 "name": "Battery"
             },
+            "last_checkin": {
+                "name": "Last check-in"
+            },
             "last_lock_event": {
                 "name": "Last Lock Event"
             },

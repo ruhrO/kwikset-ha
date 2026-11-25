@@ -1984,3 +1984,38 @@ class TestKwiksetLockConfirmationHold:
 
         assert lock._attr_is_locked is True
         assert not lock._is_confirmation_hold_active
+
+
+# =============================================================================
+# Last check-in sensor
+# =============================================================================
+
+
+class TestLastCheckinSensor:
+    """Tests for the last check-in timestamp sensor."""
+
+    def test_description(self, sensor_module) -> None:
+        """Test the last check-in sensor is a diagnostic timestamp."""
+        from homeassistant.components.sensor import SensorDeviceClass
+        from homeassistant.helpers.entity import EntityCategory
+
+        desc = next(
+            d for d in sensor_module.SENSOR_DESCRIPTIONS if d.key == "last_checkin"
+        )
+        assert desc.device_class == SensorDeviceClass.TIMESTAMP
+        assert desc.entity_category == EntityCategory.DIAGNOSTIC
+        assert desc.state_class is None
+
+    def test_value_fn_reads_coordinator(
+        self, sensor_module, mock_coordinator: MagicMock
+    ) -> None:
+        """Test value_fn returns the coordinator's last_checkin."""
+        from datetime import UTC
+        from datetime import datetime
+
+        stamp = datetime(2026, 11, 25, 20, 0, tzinfo=UTC)
+        mock_coordinator.last_checkin = stamp
+        desc = next(
+            d for d in sensor_module.SENSOR_DESCRIPTIONS if d.key == "last_checkin"
+        )
+        assert desc.value_fn(mock_coordinator) == stamp

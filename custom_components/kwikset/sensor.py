@@ -48,6 +48,7 @@ Entity Description Pattern:
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -99,7 +100,7 @@ class KwiksetSensorEntityDescription(
 
     """
 
-    value_fn: Callable[[KwiksetDeviceDataUpdateCoordinator], int | None]
+    value_fn: Callable[[KwiksetDeviceDataUpdateCoordinator], int | datetime | None]
 
 
 class KwiksetHistorySensorEntityDescription(
@@ -131,6 +132,13 @@ SENSOR_DESCRIPTIONS: tuple[KwiksetSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda coordinator: coordinator.battery_percentage,
+    ),
+    KwiksetSensorEntityDescription(
+        key="last_checkin",
+        translation_key="last_checkin",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: coordinator.last_checkin,
     ),
 )
 
